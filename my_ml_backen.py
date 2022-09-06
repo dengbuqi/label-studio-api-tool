@@ -10,6 +10,7 @@ from pathlib import Path
 from yolov5 import train as yolov5train
 from datetime import datetime
 import yaml
+import time
 
 # convert to LS percent units 
 def convert_to_ls(xmin, ymin, xmax, ymax, img_w, img_h):
@@ -32,6 +33,7 @@ class MyModel(LabelStudioMLBase):
         # don't forget to initialize base class...
         super(MyModel, self).__init__(**kwargs)
         self.model = torch.hub.load('./yolov5/', 'custom', path='./best.pt', source='local')
+        self.model.eval()
         self.from_name, self.schema = list(self.parsed_label_config.items())[0]
         self.to_name = self.schema['to_name'][0]
         self.labels = self.schema['labels']
@@ -49,8 +51,11 @@ class MyModel(LabelStudioMLBase):
             image_path = get_image_local_path(task['data']['image'])
             im = Image.open(image_path)
             width, height = im.size
-            self.model.eval()
+            start = time.time()
             results = self.model(im)
+            print('#'*50)
+            print('Time', time.time()-start)
+            print('#'*50)
             results = results.pandas().xyxy[0]
             ls_results = []
             for index, row in results.iterrows():
